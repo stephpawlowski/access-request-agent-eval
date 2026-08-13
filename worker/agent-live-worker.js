@@ -647,7 +647,6 @@ Every request must end with exactly one of ask_clarifying_question, escalate_to_
 
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 1024;
-const TEMPERATURE = 0;
 const MAX_NON_TERMINAL_TOOL_CALLS = 6;
 
 // --------------------------------------------------------------------------------------------
@@ -698,7 +697,6 @@ async function runAgentLoop(userMessage, writer, env) {
         body: JSON.stringify({
           model: MODEL,
           max_tokens: MAX_TOKENS,
-          temperature: TEMPERATURE,
           system: SYSTEM_PROMPT,
           tools: TOOL_SCHEMAS,
           messages,
