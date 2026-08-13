@@ -24,7 +24,6 @@ const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, "..", "system-prompt.
 
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 1024;
-const TEMPERATURE = 0;
 const MAX_NON_TERMINAL_TOOL_CALLS = 6;
 
 // Claude Sonnet 5 pricing, per Anthropic's own pricing page, confirmed current as of August
@@ -67,7 +66,6 @@ class AgentProvider {
       const response = await client.messages.create({
         model: MODEL,
         max_tokens: MAX_TOKENS,
-        temperature: TEMPERATURE,
         system: SYSTEM_PROMPT,
         tools: TOOL_SCHEMAS,
         messages,
@@ -116,16 +114,25 @@ class AgentProvider {
       nonTerminalCallCount += 1;
 
       messages.push({ role: "assistant", content: response.content });
-      const toolResultMessage = {
-        role: "user",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: JSON.stringify(result),
-          },
-        ],
-      };
+
+      // Every tool_use block in this turn needs a matching tool_result before the next API
+      // call, even ones we did not act on: only `block` (the first) is actually executed, but
+      // if the model returned more than one tool_use block in this turn, the others still need
+      // a tool_result or the API rejects the next request with "tool_use ids were found without
+      // tool_result blocks immediately after". Unexecuted ones get a placeholder explaining why.
+      const toolResultBlocks = toolUseBlocks.map((tb) =>
+        tb.id === block.id
+          ? { type: "tool_result", tool_use_id: tb.id, content: JSON.stringify(result) }
+          : {
+              type: "tool_result",
+              tool_use_id: tb.id,
+              content: JSON.stringify({
+                skipped: true,
+                reason: "Only one tool call is processed per turn; this call was not executed.",
+              }),
+            }
+      );
+      const toolResultMessage = { role: "user", content: toolResultBlocks };
       messages.push(toolResultMessage);
       transcript.push(toolResultMessage);
     }
