@@ -1,0 +1,15 @@
+{
+  "name": "access-request-agent-eval",
+  "version": "1.0.0",
+  "description": "Evaluating a real multi-turn, tool-using LLM agent that handles IT access requests, reusing the policy engine from access-policy-compliance-eval, graded on tool use, clarification behavior, and decision correctness, using promptfoo. Runs the same agent loop against both Claude Sonnet 5 and GPT-4.1 for model comparison, and tracks real per-scenario API cost and latency alongside the grading. Includes scenario categories testing resistance to embedded prompt-injection instructions and refusal to fabricate answers outside what the agent's five tools can actually provide.",
+  "private": true,
+  "scripts": {
+    "eval": "promptfoo eval",
+    "view": "promptfoo view",
+    "validate": "node scripts/validate-scenarios.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "promptfoo": "latest"
+  }
+}

@@ -1,0 +1,18 @@
+# Cloudflare Worker config for the live "try it live" agent demo.
+#
+# This is a template. Stephanie needs to fill in the KV namespace id below after running
+# `wrangler kv namespace create RATE_LIMIT_KV` (see README.md, "Deploying the live demo").
+#
+# The Anthropic API key is NOT set in this file. It is set separately, as a Worker secret,
+# with:
+#   wrangler secret put ANTHROPIC_API_KEY
+# run from inside this worker/ directory. Secrets set this way are encrypted at rest and
+# never appear in this file, in `wrangler deploy` output, or in the deployed source.
+
+name = "access-request-agent-live"
+main = "agent-live-worker.js"
+compatibility_date = "2024-11-01"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

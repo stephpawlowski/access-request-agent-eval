@@ -1,0 +1,57 @@
+description: "Access request agent eval: a real multi-turn, tool-using agent graded on tool use, clarification behavior, and final decision correctness."
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: file://providers/agent-provider.js
+    label: claude-sonnet-5
+  - id: file://providers/agent-provider-gpt41.js
+    label: gpt-4.1
+
+tests: file://scenarios.csv
+
+defaultTest:
+  assert:
+    # Did the agent call the right tools, in the right order, no more and no fewer, before
+    # taking its final action? This is graded independently of whether the final decision
+    # happened to come out right, a model can reach the correct answer while skipping
+    # verification it should not have skipped.
+    - type: javascript
+      metric: tool_use_correct
+      value: |
+        const parsed = JSON.parse(output);
+        const actual = parsed.toolCalls.map((c) => c.name);
+        const expected = String(context.vars.expected_tool_calls || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+        if (actual.length !== expected.length) return false;
+        for (let i = 0; i < expected.length; i++) {
+          if (actual[i] !== expected[i]) return false;
+        }
+        return true;
+
+    # Did the agent take the correct kind of final action: ask a clarifying question,
+    # escalate to a human, or respond with a decision?
+    - type: javascript
+      metric: clarification_correct
+      value: |
+        const parsed = JSON.parse(output);
+        return parsed.finalAction === context.vars.expected_final_action;
+
+    # If a final decision was expected, did check_policy actually produce that decision
+    # somewhere along the way? Not applicable (auto-pass) for scenarios that never reach a
+    # decision, like ones that end in a clarifying question.
+    - type: javascript
+      metric: decision_correct
+      value: |
+        const expectedDecision = String(context.vars.expected_decision || "").trim();
+        if (expectedDecision === "") return true;
+        const parsed = JSON.parse(output);
+        const policyCalls = parsed.toolCalls.filter(
+          (c) => c.name === "check_policy" && c.result && c.result.status === "ok"
+        );
+        if (policyCalls.length === 0) return false;
+        const last = policyCalls[policyCalls.length - 1];
+        return last.result.decision === expectedDecision;

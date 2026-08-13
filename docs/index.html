@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access Request Agent Eval</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --border: #e0e0e0;
+    --text: #1f2328;
+    --muted: #6a737d;
+    --accent: #2b5fad;
+    --pass: #1a7f37;
+    --pass-bg: #e6f4ea;
+    --fail: #b3261e;
+    --fail-bg: #fbe9e7;
+    --pending-bg: #fff8e1;
+    --pending-text: #8a6d00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 0 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+  }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  .byline { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .byline a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(43,95,173,0.35); }
+  .byline a:hover { border-bottom-color: var(--accent); }
+  .tagline { font-size: 15px; font-style: italic; color: var(--text); margin: 2px 0 12px; max-width: 720px; }
+  .intro { color: var(--text); font-size: 14px; max-width: 760px; margin: 0 0 14px; }
+  .intro code { background: var(--pending-bg); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }
+  .tag { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 3px 11px; font-size: 11.5px; color: var(--muted); }
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  section h2 {
+    margin-top: 0;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .stat-card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .stat-card .value { font-size: 26px; font-weight: 600; margin-top: 2px; }
+  .provider-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .provider-table th, .provider-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+  .provider-table th { background: var(--bg); font-weight: 600; }
+  .empty-note {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+    border: 1px solid #f0dfa0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; align-items: flex-end; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field select {
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    min-width: 190px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-right: 4px;
+  }
+  .badge.pass { background: var(--pass-bg); color: var(--pass); }
+  .badge.fail { background: var(--fail-bg); color: var(--fail); }
+  .badge.na { background: var(--bg); color: var(--muted); }
+  .scenario {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .scenario summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13.5px;
+    list-style: none;
+  }
+  .scenario summary::-webkit-details-marker { display: none; }
+  .scenario summary .id { font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
+  .scenario summary .cat { color: var(--muted); font-size: 12px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .scenario summary .msg { color: var(--text); flex: 1 1 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scenario-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); font-size: 13.5px; }
+  .step {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 8px 0;
+  }
+  .step .step-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 4px; }
+  .step .step-name { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
+  .step pre { margin: 6px 0 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+  .opening { font-style: italic; color: var(--text); margin: 6px 0 12px; padding: 10px 12px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); }
+  .final-action { margin-top: 10px; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; }
+  .badges-row { margin-top: 10px; }
+  footer { max-width: 1080px; margin: 0 auto; padding: 8px 32px 40px; color: var(--muted); font-size: 12px; }
+
+  /* Live demo section (#live-demo). New elements not used elsewhere on the page (textarea,
+     button, loading indicator); everything else in this section reuses .step, .scenario-body,
+     .final-action, .empty-note, and .badge from above. */
+  .live-demo-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+  .live-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--text);
+    background: #fff;
+    resize: vertical;
+    min-height: 64px;
+  }
+  .live-textarea:focus { outline: 1px solid var(--accent); }
+  .live-demo-controls { display: flex; align-items: center; gap: 12px; }
+  .live-button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .live-button:disabled { background: var(--muted); cursor: not-allowed; }
+  .live-loading { font-size: 12.5px; color: var(--muted); font-style: italic; }
+  .live-output { margin-top: 14px; }
+  .live-output:empty { margin-top: 0; }
+  .live-result { margin: 6px 0 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Access Request Agent Eval</h1>
+  <div class="byline">
+    By Stephanie Pawlowski ·
+    <a href="https://stephpawlowski.com/">About Me</a> ·
+    <a href="https://www.linkedin.com/in/stephaniepawlowski/">LinkedIn</a> ·
+    Other projects:
+    <a href="https://benefits.stephpawlowski.com">Benefits Q&amp;A Checker</a> and
+    <a href="https://access-checker.stephpawlowski.com">Access Policy Compliance Checker</a>
+  </div>
+  <p class="tagline">Can an LLM actually run a multi-step access-request workflow, not just answer one question about it?</p>
+  <p class="intro">
+    My first two projects in this series each graded a single prompt-in, answer-out response: a
+    RAG document-grounding check, then a policy-compliance check scored on three dimensions.
+    Neither one tests what most real "agentic AI" job postings actually mean: a model that holds
+    a conversation, calls tools, gets real data back, and decides what to do next based on that
+    data, over more than one turn. This project does that. It gives an LLM five tools (a
+    directory lookup, a policy check, and three ways to end the conversation: ask a question,
+    escalate to a human, or respond with a decision), then runs a real tool-use loop against the
+    Anthropic API, and grades the whole trajectory, not just a final string.
+  </p>
+  <p class="intro">
+    It reuses <code>docs/policy-engine.js</code>, unmodified, from
+    <a href="https://access-checker.stephpawlowski.com">access-policy-compliance-eval</a>, so the
+    underlying rules for Fernwood Systems, Meridian Health, and Vertex Capital are exactly the
+    same ones that project already validated. What's new here is the harness around them: instead
+    of handing the model a fully-specified request and grading its answer, most scenarios in this
+    eval leave something out on purpose, a name without a role, a manager without a stated
+    direct-report relationship, a person who isn't in the directory at all, and check whether the
+    model goes and finds the missing fact, asks for it, or (the failure mode this whole project is
+    built to catch) just guesses and moves on.
+  </p>
+  <p class="intro">
+    Every response is graded on three separate dimensions: <code>tool_use_correct</code> (did the
+    model call the right tools, in the right order, before acting), <code>clarification_correct</code>
+    (did it take the right kind of final action: answer, ask, or escalate), and
+    <code>decision_correct</code> (when it did reach a decision, was it the one the policy engine
+    actually produces).
+  </p>
+  <p class="intro">
+    Every scenario now runs against two providers: Claude Sonnet 5 and GPT-4.1, using the exact
+    same tools, system prompt, and grading. Comparing models head to head, not just validating
+    one, is part of how model-selection decisions actually get made. Real per-scenario API cost
+    (Claude Sonnet 5: $2.00 / million input tokens, $10.00 / million output tokens; GPT-4.1:
+    $2.00 / million input tokens, $8.00 / million output tokens) and wall-clock latency are
+    tracked alongside the three grading dimensions below.
+  </p>
+  <div class="tags">
+    <span class="tag">promptfoo</span>
+    <span class="tag">Claude Sonnet 5</span>
+    <span class="tag">GPT-4.1</span>
+    <span class="tag">multi-turn tool use</span>
+    <span class="tag">52 scenarios</span>
+  </div>
+</header>
+
+<main>
+
+  <section id="summary">
+    <h2>Summary</h2>
+    <div id="summary-content">
+      <!-- populated by renderSummary() -->
+    </div>
+  </section>
+
+  <section id="live-demo">
+    <h2>Try it live</h2>
+    <p class="intro">
+      This calls a live Cloudflare Worker running the actual agent: the same five tools, the
+      same system prompt, and the same termination rules as <code>providers/agent-provider.js</code>,
+      just streamed step by step instead of graded after the fact. Type an access request below
+      and watch each tool call (a directory lookup, a policy check) appear as it happens, ending
+      in a question, an escalation, or a decision. Requests are rate-limited to a handful per
+      visitor per hour, so it stays cheap to host.
+    </p>
+    <div class="live-demo-form">
+      <textarea
+        id="live-input"
+        class="live-textarea"
+        rows="3"
+        placeholder="I need access to the Production Database, my name is Marcus Webb."
+      ></textarea>
+      <div class="live-demo-controls">
+        <button id="live-run-btn" class="live-button" type="button">Run agent</button>
+        <span id="live-loading" class="live-loading" hidden>Running the agent...</span>
+      </div>
+    </div>
+    <div id="live-output" class="live-output">
+      <!-- populated live by runLiveAgent() as SSE events arrive from the Worker -->
+    </div>
+  </section>
+
+  <section id="results">
+    <h2>Results</h2>
+    <div class="filters">
+      <div class="field">
+        <label for="filter-category">Category</label>
+        <select id="filter-category">
+          <option value="">All categories</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-dimension">Failed dimension</label>
+        <select id="filter-dimension">
+          <option value="">Any (show all)</option>
+          <option value="tool_use_correct">Tool use failed</option>
+          <option value="clarification_correct">Clarification failed</option>
+          <option value="decision_correct">Decision failed</option>
+        </select>
+      </div>
+    </div>
+    <div id="results-content">
+      <!-- populated by renderResults() -->
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Source: <code>access-request-agent-eval</code>. Policy logic shared verbatim with
+  access-policy-compliance-eval. No live results yet, see the summary above.
+</footer>
+
+<script>
+  // WORKER_URL points at the deployed Cloudflare Worker that backs the "Try it live" section
+  // below. This is a placeholder; it has not been deployed yet. After running `wrangler
+  // deploy` from inside worker/ (see README.md, "Deploying the live demo"), replace this with
+  // the resulting *.workers.dev URL (or a custom domain), including the /agent path, for
+  // example "https://access-request-agent-live.your-subdomain.workers.dev/agent".
+  const WORKER_URL = "REPLACE_WITH_YOUR_DEPLOYED_WORKER_URL";
+
+  // DATA is populated by pasting the contents of results.json here after running
+  // `npm run eval -- -o results.json` against both providers (see promptfooconfig.yaml),
+  // transformed into the shape this page expects: one object per (scenario, provider) result,
+  // spreading in the parsed provider output (toolCalls, finalAction, finalActionInput, costUsd,
+  // promptTokens, completionTokens, see providers/agent-provider.js and
+  // providers/agent-provider-gpt41.js) plus pass/fail per dimension, plus two fields folded in
+  // from promptfoo's own result metadata rather than the parsed output:
+  //   - `latencyMs`: promptfoo's own wall-clock measurement, exposed as result.latencyMs in
+  //     results.json. Rendered as average latency in seconds in the summary section.
+  //   - `provider`: the provider's label from promptfooconfig.yaml ("claude-sonnet-5" or
+  //     "gpt-4.1"), exposed as result.provider.label in results.json. Used by the provider
+  //     breakdown table in the summary section.
+  // Empty for now, this project hasn't been run against a live model yet.
+  const DATA = [];
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function badge(pass, label) {
+    if (pass === null || pass === undefined) {
+      return '<span class="badge na">' + escapeHtml(label) + ': n/a</span>';
+    }
+    const cls = pass ? "pass" : "fail";
+    const word = pass ? "pass" : "fail";
+    return '<span class="badge ' + cls + '">' + escapeHtml(label) + ': ' + word + '</span>';
+  }
+
+  function renderSummary() {
+    const el = document.getElementById("summary-content");
+    if (DATA.length === 0) {
+      el.innerHTML =
+        '<div class="empty-note">No results yet. This is a fresh project: the scenarios and ' +
+        'grading are built and validated against the policy engine (see ' +
+        '<code>scripts/validate-scenarios.js</code>), but running it for real means calling the ' +
+        'live Anthropic and OpenAI APIs with API keys, which has not happened yet. Once it has, ' +
+        'this section will show pass rates for tool_use_correct, clarification_correct, and ' +
+        'decision_correct, both overall and by scenario category, plus total and average cost, ' +
+        'average latency, and a pass-rate breakdown by provider (claude-sonnet-5 vs gpt-4.1).</div>';
+      return;
+    }
+    const total = DATA.length;
+    const dims = ["tool_use_correct", "clarification_correct", "decision_correct"];
+    const counts = {};
+    dims.forEach((d) => (counts[d] = DATA.filter((r) => r[d] === true).length));
+
+    // Cost and latency, read straight off each row. costUsd comes from the parsed provider
+    // output (see providers/agent-provider.js and providers/agent-provider-gpt41.js); latencyMs
+    // is promptfoo's own wall-clock measurement (result.latencyMs in results.json), expected to
+    // be folded into each DATA row under that same field name, see the comment on DATA above.
+    const totalCost = DATA.reduce((sum, r) => sum + (r.costUsd || 0), 0);
+    const avgCost = total ? totalCost / total : 0;
+    const avgLatencySec = total ? DATA.reduce((sum, r) => sum + (r.latencyMs || 0), 0) / total / 1000 : 0;
+
+    let html = '<div class="stat-grid">';
+    html += '<div class="stat-card"><div class="label">Scenarios</div><div class="value">' + total + '</div></div>';
+    dims.forEach((d) => {
+      const pct = total ? Math.round((counts[d] / total) * 1000) / 10 : 0;
+      html += '<div class="stat-card"><div class="label">' + d + '</div><div class="value">' + counts[d] + '/' + total + '</div></div>';
+    });
+    html += '<div class="stat-card"><div class="label">Total cost</div><div class="value">$' + totalCost.toFixed(4) + '</div></div>';
+    html += '<div class="stat-card"><div class="label">Avg cost / scenario</div><div class="value">$' + avgCost.toFixed(4) + '</div></div>';
+    html += '<div class="stat-card"><div class="label">Avg latency</div><div class="value">' + avgLatencySec.toFixed(2) + 's</div></div>';
+    html += '</div>';
+
+    html += renderProviderBreakdown();
+
+    el.innerHTML = html;
+  }
+
+  // Pass-rate breakdown by provider (claude-sonnet-5 vs gpt-4.1, or whatever provider labels
+  // are actually present in DATA; this does not hardcode either name). Same three grading
+  // dimensions as the stat cards above, just split out per provider so a viewer can see whether
+  // one model does meaningfully better than the other. Reads r.provider off each DATA row,
+  // expected to be folded in from promptfoo's result.provider.label, see the comment on DATA.
+  function renderProviderBreakdown() {
+    const providers = Array.from(new Set(DATA.map((r) => r.provider))).sort();
+    const dims = ["tool_use_correct", "clarification_correct", "decision_correct"];
+    let html = '<table class="provider-table"><thead><tr><th>Provider</th>';
+    dims.forEach((d) => {
+      html += "<th>" + escapeHtml(d) + "</th>";
+    });
+    html += "</tr></thead><tbody>";
+    providers.forEach((p) => {
+      const rows = DATA.filter((r) => r.provider === p);
+      html += "<tr><td>" + escapeHtml(p) + "</td>";
+      dims.forEach((d) => {
+        const passCount = rows.filter((r) => r[d] === true).length;
+        const pct = rows.length ? Math.round((passCount / rows.length) * 1000) / 10 : 0;
+        html += "<td>" + passCount + "/" + rows.length + " (" + pct + "%)</td>";
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    return html;
+  }
+
+  function populateCategoryFilter() {
+    const sel = document.getElementById("filter-category");
+    const cats = Array.from(new Set(DATA.map((r) => r.category))).sort();
+    cats.forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      sel.appendChild(opt);
+    });
+  }
+
+  function renderStep(step) {
+    return (
+      '<div class="step">' +
+      '<div class="step-label">Tool call</div>' +
+      '<div class="step-name">' + escapeHtml(step.name) + '</div>' +
+      '<pre>input: ' + escapeHtml(JSON.stringify(step.input, null, 2)) + '</pre>' +
+      '<pre>result: ' + escapeHtml(JSON.stringify(step.result, null, 2)) + '</pre>' +
+      '</div>'
+    );
+  }
+
+  function renderScenario(row) {
+    const toolUsePass = row.tool_use_correct;
+    const clarPass = row.clarification_correct;
+    const decisionPass = row.decision_correct;
+    const toolCalls = (row.toolCalls || []).map(renderStep).join("");
+    const finalActionHtml =
+      '<div class="final-action"><b>Final action:</b> ' +
+      escapeHtml(row.finalAction || "(none)") +
+      '<pre>' + escapeHtml(JSON.stringify(row.finalActionInput || {}, null, 2)) + '</pre></div>';
+
+    return (
+      '<details class="scenario" data-category="' + escapeHtml(row.category) + '">' +
+      '<summary>' +
+      '<span class="id">' + escapeHtml(row.id) + '</span>' +
+      '<span class="cat">' + escapeHtml(row.category) + '</span>' +
+      '<span class="msg">' + escapeHtml(row.opening_message) + '</span>' +
+      badge(toolUsePass, "tool use") + badge(clarPass, "clarification") + badge(decisionPass, "decision") +
+      '</summary>' +
+      '<div class="scenario-body">' +
+      '<div class="opening">"' + escapeHtml(row.opening_message) + '"</div>' +
+      toolCalls +
+      finalActionHtml +
+      '</div>' +
+      '</details>'
+    );
+  }
+
+  function renderResults() {
+    const el = document.getElementById("results-content");
+    if (DATA.length === 0) {
+      el.innerHTML =
+        '<div class="empty-note">No transcripts to show yet. Once <code>results.json</code> exists, ' +
+        'each of the 52 scenarios, run against both providers, will render here as an expandable ' +
+        'transcript: the opening message, every tool call the agent made with its input and ' +
+        'result, the final action, and three pass/fail badges.</div>';
+      return;
+    }
+    const catFilter = document.getElementById("filter-category").value;
+    const dimFilter = document.getElementById("filter-dimension").value;
+    let rows = DATA.slice();
+    if (catFilter) rows = rows.filter((r) => r.category === catFilter);
+    if (dimFilter) rows = rows.filter((r) => r[dimFilter] === false);
+    if (rows.length === 0) {
+      el.innerHTML = '<div class="empty-note">No scenarios match the current filters.</div>';
+      return;
+    }
+    el.innerHTML = rows.map(renderScenario).join("");
+  }
+
+  document.getElementById("filter-category").addEventListener("change", renderResults);
+  document.getElementById("filter-dimension").addEventListener("change", renderResults);
+
+  renderSummary();
+  populateCategoryFilter();
+  renderResults();
+
+  // -----------------------------------------------------------------------------------------
+  // Live demo (#live-demo). Talks to the Cloudflare Worker at WORKER_URL over Server-Sent
+  // Events. Reuses escapeHtml() above and the .step / .final-action / .empty-note CSS classes
+  // already defined for the static report, so this looks like it belongs on the same page.
+  // -----------------------------------------------------------------------------------------
+
+  // Renders one tool call as a .step element, the same markup shape as renderStep() above,
+  // except the result starts as "(waiting...)" and gets filled in once the matching
+  // tool_result event arrives, since the live version reveals its result asynchronously
+  // instead of having it available up front like the static transcript does.
+  function appendLiveStep(container, name, input) {
+    const div = document.createElement("div");
+    div.className = "step";
+    div.innerHTML =
+      '<div class="step-label">Tool call</div>' +
+      '<div class="step-name">' + escapeHtml(name) + '</div>' +
+      '<pre>input: ' + escapeHtml(JSON.stringify(input, null, 2)) + '</pre>' +
+      '<pre class="live-result">result: (waiting...)</pre>';
+    container.appendChild(div);
+    return div;
+  }
+
+  function fillLiveStepResult(stepEl, result) {
+    if (!stepEl) return;
+    const pre = stepEl.querySelector(".live-result");
+    if (pre) {
+      pre.textContent = "result: " + JSON.stringify(result, null, 2);
+    }
+  }
+
+  // Same markup shape as the finalActionHtml built inside renderScenario() above.
+  function appendLiveFinal(container, action, actionInput) {
+    const div = document.createElement("div");
+    div.className = "final-action";
+    div.innerHTML =
+      '<b>Final action:</b> ' + escapeHtml(action || "(none)") +
+      '<pre>' + escapeHtml(JSON.stringify(actionInput || {}, null, 2)) + '</pre>';
+    container.appendChild(div);
+  }
+
+  // Reuses the same visual treatment as the "no results yet" / "no scenarios match" states
+  // in the static report, so a rate-limit message or an API error looks like part of the page
+  // instead of a raw crash.
+  function appendLiveNote(container, message) {
+    const div = document.createElement("div");
+    div.className = "empty-note";
+    div.textContent = message;
+    container.appendChild(div);
+  }
+
+  async function runLiveAgent() {
+    const input = document.getElementById("live-input");
+    const button = document.getElementById("live-run-btn");
+    const loading = document.getElementById("live-loading");
+    const output = document.getElementById("live-output");
+
+    const message = input.value.trim();
+    output.innerHTML = "";
+
+    if (!message) {
+      appendLiveNote(output, "Type a request above first.");
+      return;
+    }
+
+    if (WORKER_URL === "REPLACE_WITH_YOUR_DEPLOYED_WORKER_URL") {
+      appendLiveNote(
+        output,
+        "Live demo not deployed yet. Once the Cloudflare Worker in worker/ is deployed and " +
+          "WORKER_URL is set at the top of this page's script, this box will call the real agent."
+      );
+      return;
+    }
+
+    button.disabled = true;
+    loading.hidden = false;
+
+    // Tracks the most recently appended tool_call step, so the next tool_result event (they
+    // always arrive in call/result pairs, one non-terminal tool at a time) knows which
+    // element to fill in.
+    let currentStepEl = null;
+    let sawFirstEvent = false;
+
+    try {
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message }),
+      });
+
+      if (!response.body) {
+        appendLiveNote(output, "The live demo did not return a streamable response. Try again in a moment.");
+        return;
+      }
+
+      // Manual SSE parsing: EventSource only supports GET, and this needs to POST the
+      // visitor's message, so read the stream by hand instead. Events are separated by a
+      // blank line ("\n\n"); each event is one "data: <json>" line.
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+
+        const events = buffer.split("\n\n");
+        buffer = events.pop(); // last piece may be an incomplete event, keep it for next read
+
+        for (const rawEvent of events) {
+          const dataLine = rawEvent.split("\n").find((line) => line.indexOf("data: ") === 0);
+          if (!dataLine) continue;
+
+          let evt;
+          try {
+            evt = JSON.parse(dataLine.slice("data: ".length));
+          } catch (parseErr) {
+            continue; // malformed event, skip it rather than crashing the whole stream
+          }
+
+          if (!sawFirstEvent) {
+            sawFirstEvent = true;
+            loading.hidden = true;
+          }
+
+          if (evt.type === "tool_call") {
+            currentStepEl = appendLiveStep(output, evt.name, evt.input);
+          } else if (evt.type === "tool_result") {
+            fillLiveStepResult(currentStepEl, evt.result);
+            currentStepEl = null;
+          } else if (evt.type === "final") {
+            appendLiveFinal(output, evt.action, evt.input);
+          } else if (evt.type === "error") {
+            // Covers both a mid-stream Anthropic API failure and the 429 rate-limit event:
+            // the Worker sends the same { type: 'error', message } shape either way.
+            appendLiveNote(output, evt.message || "The live agent hit an error.");
+          }
+        }
+      }
+    } catch (err) {
+      appendLiveNote(
+        output,
+        "Could not reach the live agent: " + (err && err.message ? err.message : String(err))
+      );
+    } finally {
+      button.disabled = false;
+      loading.hidden = true;
+    }
+  }
+
+  document.getElementById("live-run-btn").addEventListener("click", runLiveAgent);
+</script>
+
+</body>
+</html>

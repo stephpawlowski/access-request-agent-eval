@@ -1,0 +1,25 @@
+[
+  { "name": "Sarah Chen", "company": "fernwood", "role": "Employee", "department": "Engineering", "offboarding": false },
+  { "name": "Marcus Webb", "company": "fernwood", "role": "Contractor", "department": "Engineering", "offboarding": false },
+  { "name": "Priya Patel", "company": "fernwood", "role": "Intern", "department": "Engineering", "offboarding": false },
+  { "name": "David Kim", "company": "fernwood", "role": "Manager", "department": "Engineering", "offboarding": false },
+  { "name": "Elena Rodriguez", "company": "fernwood", "role": "Admin", "department": "Security", "offboarding": false },
+  { "name": "Tom Ashford", "company": "fernwood", "role": "Employee", "department": "Finance", "offboarding": false },
+  { "name": "Jenny Osei", "company": "fernwood", "role": "Intern", "department": "Finance", "offboarding": false },
+  { "name": "Robert Chen", "company": "fernwood", "role": "Manager", "department": "Sales", "offboarding": false },
+  { "name": "Victor Reyes", "company": "fernwood", "role": "Employee", "department": "Engineering", "offboarding": true },
+
+  { "name": "Dr. Amara Nwosu", "company": "meridian", "role": "Clinician", "department": "Clinical Care", "offboarding": false },
+  { "name": "Grace Liu", "company": "meridian", "role": "Nurse", "department": "Clinical Care", "offboarding": false },
+  { "name": "Frank Delgado", "company": "meridian", "role": "Billing Coordinator", "department": "Billing", "offboarding": false },
+  { "name": "Wendy Zhao", "company": "meridian", "role": "IT Admin", "department": "IT", "offboarding": false },
+  { "name": "Harold Jennings", "company": "meridian", "role": "Compliance Officer", "department": "Compliance", "offboarding": false },
+  { "name": "Alicia Munro", "company": "meridian", "role": "Nurse", "department": "Clinical Care", "offboarding": true },
+
+  { "name": "Nina Petrov", "company": "vertex", "role": "Trader", "department": "Trading Desk", "offboarding": false },
+  { "name": "Omar Farouk", "company": "vertex", "role": "Portfolio Manager", "department": "Portfolio Management", "offboarding": false },
+  { "name": "Claire Bennett", "company": "vertex", "role": "Compliance Officer", "department": "Compliance", "offboarding": false },
+  { "name": "Derek Holt", "company": "vertex", "role": "Ops Analyst", "department": "Operations", "offboarding": false },
+  { "name": "Sam Okafor", "company": "vertex", "role": "Admin", "department": "IT", "offboarding": false },
+  { "name": "Yusuf Ibrahim", "company": "vertex", "role": "Trader", "department": "Trading Desk", "offboarding": false }
+]
