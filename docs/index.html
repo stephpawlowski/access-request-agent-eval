@@ -366,7 +366,7 @@
   // deploy` from inside worker/ (see README.md, "Deploying the live demo"), replace this with
   // the resulting *.workers.dev URL (or a custom domain), including the /agent path, for
   // example "https://access-request-agent-live.your-subdomain.workers.dev/agent".
-  const WORKER_URL = "REPLACE_WITH_YOUR_DEPLOYED_WORKER_URL";
+  const WORKER_URL = "https://access-request-agent-live.stephrpawlowski.workers.dev/agent";
 
   // DATA is populated by pasting the contents of results.json here after running
   // `npm run eval -- -o results.json` against both providers (see promptfooconfig.yaml),
@@ -5023,7 +5023,7 @@
       return;
     }
 
-    if (WORKER_URL === "REPLACE_WITH_YOUR_DEPLOYED_WORKER_URL") {
+    if (WORKER_URL === "https://access-request-agent-live.stephrpawlowski.workers.dev/agent") {
       appendLiveNote(
         output,
         "Live demo not deployed yet. Once the Cloudflare Worker in worker/ is deployed and " +
